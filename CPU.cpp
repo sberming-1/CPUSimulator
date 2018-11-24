@@ -1,5 +1,7 @@
 #include <string.h>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 
@@ -113,6 +115,57 @@ void screenMemory(bool clear, char writeData[16], int writeAddress, bool writeEn
 
 int main(int argc, char const *argv[])
 {
-    /* code */
+    string line;
+    if(argc < 2){
+        cout<<"Please select a file to execute"<<endl;
+    }
+
+    ifstream file (argv[1]);
+    if(!file.is_open()){
+        cout<<"There was an error opening the file. The program will now exit"<<endl;
+        return -1;
+    }
+    else{
+        getline(file, line);
+        if(line.compare("v2.0 raw\n") != 0){
+            cout << "The proper file type to execute is a .hex file\n";
+        }
+        else{
+            while(getline(file, line)){
+                std::stringstream ss;
+                short dest, src1, src2, immediate;
+                
+                switch(line[0]){
+                    //the r opcodes
+                    case 0: case 1: case 2: case 3: case 4:                        
+                    case 5: case 6: case 7: case 8: case 9:                        
+                    case 'a': case 'b':
+                        ss<<std::hex<<line[1];
+                        ss>>dest;
+                        ss.clear();
+                        ss<<std::hex<<line[2];
+                        ss>>src1;
+                        ss.clear();
+                        ss<<std::hex<<line[3];
+                        ss>>src2;
+                        ss.clear();
+                        break;
+                    //The i codes
+                    case 'c': case 'd': case 'e': case 'f':
+                        ss<<std::hex<<line[1];
+                        ss>>dest;
+                        ss.clear();
+                        string im = "";
+                        im+=line[2];
+                        im+=line[3];
+                        ss<<std::hex<<im;
+                        ss>>immediate;
+                        break;
+                }
+
+            }
+        }// end of compare else
+
+    }//end of file else
     return 0;
 }
