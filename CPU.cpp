@@ -115,6 +115,7 @@ void screenMemory(bool clear, char writeData[16], int writeAddress, bool writeEn
 
 int main(int argc, char const *argv[])
 {
+    
     string line;
     if(argc < 2){
         cout<<"Please select a file to execute"<<endl;
@@ -127,42 +128,117 @@ int main(int argc, char const *argv[])
     }
     else{
         getline(file, line);
-        if(line.compare("v2.0 raw\n") != 0){
+        if(line.compare("v2.0 raw") != 0){
             cout << "The proper file type to execute is a .hex file\n";
         }
         else{
+            int counter = 0;
+            short** ROM = new short*[10000];
+            for(int i = 0; i<10000; i++){
+                ROM[i] = new short[4];
+            }
+            
+            int numberOfItems = 0;
             while(getline(file, line)){
+                numberOfItems++;   
+            }
+            file.clear();
+            file.seekg(0, ios::beg);
+            string contents[numberOfItems];
+            getline(file, line);
+            int i = 0;
+            while(getline(file,line)){
+                contents[i] = line;
+                i++;
+            }
+            while(true){
+                int position;
                 std::stringstream ss;
-                short dest, src1, src2, immediate;
-                
+                short opcode, dest, src1, src2, immediate;
+                line = contents[counter]; 
+                string im = "";
                 switch(line[0]){
                     //the r opcodes
                     case 0: case 1: case 2: case 3: case 4:                        
                     case 5: case 6: case 7: case 8: case 9:                        
                     case 'a': case 'b':
+                        ss<<std::hex<<line[0];
+                        ss>>ROM[position][0];
+                        ss.clear();
                         ss<<std::hex<<line[1];
-                        ss>>dest;
+                        ss>>ROM[position][1];
                         ss.clear();
                         ss<<std::hex<<line[2];
-                        ss>>src1;
+                        ss>>ROM[position][2];
                         ss.clear();
                         ss<<std::hex<<line[3];
-                        ss>>src2;
+                        ss>>ROM[position][3];
                         ss.clear();
+                        position++;
+                        counter++;
                         break;
                     //The i codes
-                    case 'c': case 'd': case 'e': case 'f':
+                    case 'c': 
+                        ss<<std::hex<<line[0];
+                        ss>>opcode;
+                        ss.clear();
                         ss<<std::hex<<line[1];
                         ss>>dest;
                         ss.clear();
-                        string im = "";
+                        im = "";
                         im+=line[2];
                         im+=line[3];
                         ss<<std::hex<<im;
                         ss>>immediate;
+                        ss.clear();
+                        registers[dest] = immediate;
+                        break;
+                    case 'd':
+                        ss<<std::hex<<line[0];
+                        ss>>opcode;
+                        ss.clear();
+                        ss<<std::hex<<line[1];
+                        ss>>dest;
+                        ss.clear();
+                        im = "";
+                        im+=line[2];
+                        im+=line[3];
+                        ss<<std::hex<<im;
+                        ss>>immediate;
+                        ss.clear();
+                        counter += immediate;
+                        break; 
+                    case 'e': 
+                        ss<<std::hex<<line[0];
+                        ss>>opcode;
+                        ss.clear();
+                        ss<<std::hex<<line[1];
+                        ss>>dest;
+                        ss.clear();
+                        im = "";
+                        im+=line[2];
+                        im+=line[3];
+                        ss<<std::hex<<im;
+                        ss>>immediate;
+                        ss.clear();
+                        if(dest == 0) counter += immediate;
+                        break;
+                    case 'f':
+                        ss<<std::hex<<line[0];
+                        ss>>opcode;
+                        ss.clear();
+                        ss<<std::hex<<line[1];
+                        ss>>dest;
+                        ss.clear();
+                        im = "";
+                        im+=line[2];
+                        im+=line[3];
+                        ss<<std::hex<<im;
+                        ss>>immediate;
+                        ss.clear();
+                        if(dest != 0) counter += immediate;
                         break;
                 }
-
             }
         }// end of compare else
 
