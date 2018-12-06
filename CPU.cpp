@@ -1,7 +1,10 @@
-#include <string.h>
+#include <string>
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <iomanip>
+
+#define MAX_LENGTH 5000
 
 using namespace std;
 
@@ -65,10 +68,10 @@ signed short ALU(signed short reg1, signed short reg2, int opcode){
             result = reg1;
             break;
         case 12: // blank
-            result = reg1;
+            result = reg2;
             break;
         case 13: // blank
-            result = reg1;
+            result = 1;
             break;
         case 14: // == 0
             result = (reg1 == 0) ? 32767 : 0;
@@ -115,133 +118,102 @@ void screenMemory(bool clear, char writeData[16], int writeAddress, bool writeEn
 
 int main(int argc, char const *argv[])
 {
-    
-    string line;
+    signed short** instructions = new signed short*[MAX_LENGTH];
+    for(int i = 0; i < MAX_LENGTH; i++){
+        instructions[i] = new signed short[4]; 
+    }
+
+
+    string line; // line read in from file
+    signed short PC;
+
     if(argc < 2){
         cout<<"Please select a file to execute"<<endl;
     }
 
-    ifstream file (argv[1]);
+    //open the file
+    ifstream file(argv[1]);
+    
+    //make sure the file is open
     if(!file.is_open()){
         cout<<"There was an error opening the file. The program will now exit"<<endl;
         return -1;
     }
-    else{
-        getline(file, line);
-        if(line.compare("v2.0 raw") != 0){
-            cout << "The proper file type to execute is a .hex file\n";
+    //make sure th file is the correct format;
+    getline(file, line);
+    if(line.compare("v2.0 raw") != 0){
+        cout << "The proper file type to execute is a .hex file\n";
+        return -1;
+    }
+
+    int numItems = 0;
+    std::stringstream ss;
+    while(getline(file, line)){
+        bool immed = false;
+        for(int i = 0; i < 4; i++){
+            short result;
+            if(immed && i == 2){
+                string temp = "0x";
+                temp += line[i];
+                temp += line[i+1];
+                signed char c = std::stoi(temp, nullptr, 0);
+                result = c;
+                
+            }else{
+                ss<<std::hex<<line[i];
+                ss >> result;
+                ss.clear();
+            }
+            if(i == 0 && result >= 12){
+                immed = true;
+            }
+            //cout<< "result: " << result << endl;;
+            instructions[numItems][i] = result;
         }
-        else{
-            int counter = 0;
-            short** ROM = new short*[10000];
-            for(int i = 0; i<10000; i++){
-                ROM[i] = new short[4];
+        numItems++;
+        //cout << "\n";
+    }
+    numItems++;
+    PC = 0;
+    //cout<<numItems<<endl;
+    while(PC < numItems){
+        //cout<< "PC: " << PC << " First Inst.: " << instructions[PC][0]<<endl;
+        //cout<< registers << endl;
+        if(instructions[PC][0] < 10){
+            registers[(instructions[PC][1])] = ALU(instructions[PC][2], instructions[PC][3], instructions[PC][0]);
+            PC++;
+        }
+        if(instructions[PC][0] == 10){
+            registers[(instructions[PC][1])] = registers[(instructions[PC][2])];
+            PC++;
+        }
+        if(instructions[PC][0] == 11){
+            registers[(instructions[PC][2])] = instructions[PC][3];
+            PC++;
+        }
+        if(instructions[PC][0] > 11){
+            short immed = instructions[PC][2];
+            //cout << "Immed: " << immed << ", Inst: " << instructions[PC][0] << endl;
+
+            if(instructions[PC][0] == 12){
+                registers[(instructions[PC][1])] = immed;
+                PC++;
             }
-            
-            int numberOfItems = 0;
-            while(getline(file, line)){
-                numberOfItems++;   
+            if(instructions[PC][0] == 13){
+                PC += immed;
             }
-            file.clear();
-            file.seekg(0, ios::beg);
-            string contents[numberOfItems];
-            getline(file, line);
-            int i = 0;
-            while(getline(file,line)){
-                contents[i] = line;
-                i++;
-            }
-            while(true){
-                int position;
-                std::stringstream ss;
-                short opcode, dest, src1, src2, immediate;
-                line = contents[counter]; 
-                string im = "";
-                switch(line[0]){
-                    //the r opcodes
-                    case 0: case 1: case 2: case 3: case 4:                        
-                    case 5: case 6: case 7: case 8: case 9:                        
-                    case 'a': case 'b':
-                        ss<<std::hex<<line[0];
-                        ss>>ROM[position][0];
-                        ss.clear();
-                        ss<<std::hex<<line[1];
-                        ss>>ROM[position][1];
-                        ss.clear();
-                        ss<<std::hex<<line[2];
-                        ss>>ROM[position][2];
-                        ss.clear();
-                        ss<<std::hex<<line[3];
-                        ss>>ROM[position][3];
-                        ss.clear();
-                        position++;
-                        counter++;
-                        break;
-                    //The i codes
-                    case 'c': 
-                        ss<<std::hex<<line[0];
-                        ss>>opcode;
-                        ss.clear();
-                        ss<<std::hex<<line[1];
-                        ss>>dest;
-                        ss.clear();
-                        im = "";
-                        im+=line[2];
-                        im+=line[3];
-                        ss<<std::hex<<im;
-                        ss>>immediate;
-                        ss.clear();
-                        registers[dest] = immediate;
-                        break;
-                    case 'd':
-                        ss<<std::hex<<line[0];
-                        ss>>opcode;
-                        ss.clear();
-                        ss<<std::hex<<line[1];
-                        ss>>dest;
-                        ss.clear();
-                        im = "";
-                        im+=line[2];
-                        im+=line[3];
-                        ss<<std::hex<<im;
-                        ss>>immediate;
-                        ss.clear();
-                        counter += immediate;
-                        break; 
-                    case 'e': 
-                        ss<<std::hex<<line[0];
-                        ss>>opcode;
-                        ss.clear();
-                        ss<<std::hex<<line[1];
-                        ss>>dest;
-                        ss.clear();
-                        im = "";
-                        im+=line[2];
-                        im+=line[3];
-                        ss<<std::hex<<im;
-                        ss>>immediate;
-                        ss.clear();
-                        if(dest == 0) counter += immediate;
-                        break;
-                    case 'f':
-                        ss<<std::hex<<line[0];
-                        ss>>opcode;
-                        ss.clear();
-                        ss<<std::hex<<line[1];
-                        ss>>dest;
-                        ss.clear();
-                        im = "";
-                        im+=line[2];
-                        im+=line[3];
-                        ss<<std::hex<<im;
-                        ss>>immediate;
-                        ss.clear();
-                        if(dest != 0) counter += immediate;
-                        break;
+            if(instructions[PC][0] == 14){
+                if((instructions[PC][1]) == 0){
+                    PC += immed;
                 }
             }
-        }// end of compare else
-
-    }//end of file else
+            if(instructions[PC][0] == 15){
+                if((instructions[PC][1]) != 0){
+                    PC += immed;
+                }
+            }
+        }
+        //cout<<"PC after process: "<< PC <<endl;
+    }      
     return 0;
 }
