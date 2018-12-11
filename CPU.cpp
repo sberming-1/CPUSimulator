@@ -173,12 +173,16 @@ int main(int argc, char const *argv[])
         numItems++;
         //cout << "\n";
     }
-    numItems++;
+    for(int i = 0; i < numItems; i++){
+        cout<< "Instructions " << instructions[i][0] << instructions[i][1] << instructions[i][2] << instructions[i][3] <<endl;
+
+    }
     PC = 0;
-    //cout<<numItems<<endl;
-    while(PC < numItems){
-        //cout<< "PC: " << PC << " First Inst.: " << instructions[PC][0]<<endl;
-        //cout<< registers << endl;
+    cout<<numItems<<endl;
+    while(PC < numItems+1){
+        cout<< "PC: " << PC << ", Instructions " << instructions[PC][0] << instructions[PC][1] << instructions[PC][2] << instructions[PC][3] <<endl;
+        short immed = instructions[PC][2];
+        cout << immed << endl;
         if(instructions[PC][0] < 10){
             registers[(instructions[PC][1])] = ALU(instructions[PC][2], instructions[PC][3], instructions[PC][0]);
             PC++;
@@ -191,29 +195,25 @@ int main(int argc, char const *argv[])
             registers[(instructions[PC][2])] = instructions[PC][3];
             PC++;
         }
-        if(instructions[PC][0] > 11){
-            short immed = instructions[PC][2];
-            //cout << "Immed: " << immed << ", Inst: " << instructions[PC][0] << endl;
-
-            if(instructions[PC][0] == 12){
-                registers[(instructions[PC][1])] = immed;
-                PC++;
-            }
-            if(instructions[PC][0] == 13){
+        if(instructions[PC][0] == 12){
+            registers[(instructions[PC][1])] = immed;
+            PC++;
+        }
+        if(instructions[PC][0] == 13){
+            PC += immed;
+        }
+        if(instructions[PC][0] == 14){
+            if((instructions[PC][1]) == 0){
                 PC += immed;
             }
-            if(instructions[PC][0] == 14){
-                if((instructions[PC][1]) == 0){
-                    PC += immed;
-                }
-            }
-            if(instructions[PC][0] == 15){
-                if((instructions[PC][1]) != 0){
-                    PC += immed;
-                }
+        }
+        if(instructions[PC][0] == 15){
+            if((instructions[PC][1]) != 0){
+                PC += immed;
             }
         }
-        //cout<<"PC after process: "<< PC <<endl;
+        
+        cout<<"PC after process: "<< PC <<endl;
     }      
     return 0;
 }
